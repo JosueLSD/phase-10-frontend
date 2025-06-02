@@ -14,6 +14,7 @@ import type { RouteProp } from '@react-navigation/native';
 type RootStackParamList = {
   Home: undefined;
   Lobby: { name: string; room: string };
+  Game: { name: string; room: string };
 };
 
 function HomeScreen({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, 'Home'> }) {
@@ -41,7 +42,7 @@ function HomeScreen({ navigation }: { navigation: NativeStackNavigationProp<Root
   );
 }
 
-function LobbyScreen({ route }: { route: RouteProp<RootStackParamList, 'Lobby'> }) {
+function LobbyScreen({ route, navigation }: { route: RouteProp<RootStackParamList, 'Lobby'>; navigation: NativeStackNavigationProp<RootStackParamList, 'Lobby'> }) {
   const { name, room } = route.params;
   const [players, setPlayers] = useState([]);
 
@@ -62,6 +63,34 @@ function LobbyScreen({ route }: { route: RouteProp<RootStackParamList, 'Lobby'> 
       {players.map((p, i) => (
         <Text key={i}>- {p}</Text>
       ))}
+      <Button title="Iniciar juego" onPress={() => {
+        socket.emit('start_game', { room });
+        navigation.navigate('Game', { name, room });
+      }} />
+    </View>
+  );
+}
+
+function GameScreen({ route }: { route: RouteProp<RootStackParamList, 'Game'> }) {
+  const { name, room } = route.params;
+  const [hand, setHand] = useState([]);
+
+  useEffect(() => {
+    socket.on('start_game', (data) => {
+      setHand(data.hand); // tu mano de cartas
+    });
+
+    return () => {
+      socket.off('start_game');
+    };
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Tus cartas:</Text>
+      {hand.map((card, i) => (
+        <Text key={i}>{card}</Text>
+      ))}
     </View>
   );
 }
@@ -72,6 +101,7 @@ export default function App() {
       <Stack.Navigator>
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Lobby" component={LobbyScreen} />
+        <Stack.Screen name="Game" component={GameScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
