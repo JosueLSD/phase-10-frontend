@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, Button, TextInput, StyleSheet } from 'react-native';
+import { View, Text, Button, TextInput, StyleSheet, ScrollView } from 'react-native';
+import Card from './components/Card';
 import io from 'socket.io-client';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const socket = io('http://192.168.100.23:3000');
+const socket = io('http://192.168.18.59:3000');
 //const socket = io('http://localhost:3000'); // Cámbialo por tu IP local o dominio cuando pruebes en celular
 
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
+
 
 type RootStackParamList = {
   Home: undefined;
@@ -74,7 +76,18 @@ function LobbyScreen({ route, navigation }: { route: RouteProp<RootStackParamLis
 function GameScreen({ route }: { route: RouteProp<RootStackParamList, 'Game'> }) {
   const { name, room } = route.params;
   const [hand, setHand] = useState([]);
+  const [turnPlayer, setTurnPlayer] = useState(null);
 
+  useEffect(() => {
+    socket.on('start_game', ({ hand, turnPlayer }) => {
+      setHand(hand);
+      setTurnPlayer(turnPlayer);
+    });
+
+    socket.on('turn_update', ({ nextPlayer }) => {
+      setTurnPlayer(nextPlayer);
+    });
+  }, []);
   useEffect(() => {
     socket.on('start_game', (data) => {
       setHand(data.hand); // tu mano de cartas
@@ -88,9 +101,17 @@ function GameScreen({ route }: { route: RouteProp<RootStackParamList, 'Game'> })
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Tus cartas:</Text>
+      <ScrollView horizontal>
       {hand.map((card, i) => (
-        <Text key={i}>{card}</Text>
+        <Card key={i}
+        value={card}
+        onPress={() => {
+          if (turnPlayer === name) {
+          socket.emit('play_card', { room, card });
+        }
+  }} />
       ))}
+      </ScrollView>
     </View>
   );
 }
