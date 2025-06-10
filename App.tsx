@@ -1,120 +1,18 @@
-import React, { useEffect, useState } from 'react';
+// App.tsx
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, Text, Button, TextInput, StyleSheet, ScrollView } from 'react-native';
-import Card from './components/Card';
-import io from 'socket.io-client';
+import HomeScreen from './screens/HomeScreen';
+import LobbyScreen from './screens/LobbyScreen';
+import GameScreen from './screens/GameScreen';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
-const socket = io('http://192.168.18.59:3000');
-//const socket = io('http://localhost:3000'); // Cámbialo por tu IP local o dominio cuando pruebes en celular
-
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RouteProp } from '@react-navigation/native';
-
-
-type RootStackParamList = {
+export type RootStackParamList = {
   Home: undefined;
   Lobby: { name: string; room: string };
   Game: { name: string; room: string };
 };
 
-function HomeScreen({ navigation }: { navigation: NativeStackNavigationProp<RootStackParamList, 'Home'> }) {
-  const [name, setName] = useState('');
-  const [room, setRoom] = useState('');
-
-  return (
-    <View style={styles.container}>
-      <Text>Tu nombre:</Text>
-      <TextInput style={styles.input} value={name} onChangeText={setName} />
-
-      <Text>Nombre de sala:</Text>
-      <TextInput style={styles.input} value={room} onChangeText={setRoom} />
-
-      <Button title="Crear sala" onPress={() => {
-        socket.emit('create_room', { name, room });
-        navigation.navigate('Lobby', { name, room });
-      }} />
-
-      <Button title="Unirse a sala" onPress={() => {
-        socket.emit('join_room', { name, room });
-        navigation.navigate('Lobby', { name, room });
-      }} />
-    </View>
-  );
-}
-
-function LobbyScreen({ route, navigation }: { route: RouteProp<RootStackParamList, 'Lobby'>; navigation: NativeStackNavigationProp<RootStackParamList, 'Lobby'> }) {
-  const { name, room } = route.params;
-  const [players, setPlayers] = useState([]);
-
-  useEffect(() => {
-    socket.on('room_update', (data) => {
-      setPlayers(data.players);
-    });
-
-    return () => {
-      socket.off('room_update');
-    };
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Sala: {room}</Text>
-      <Text style={styles.title}>Jugadores:</Text>
-      {players.map((p, i) => (
-        <Text key={i}>- {p}</Text>
-      ))}
-      <Button title="Iniciar juego" onPress={() => {
-        socket.emit('start_game', { room });
-        navigation.navigate('Game', { name, room });
-      }} />
-    </View>
-  );
-}
-
-function GameScreen({ route }: { route: RouteProp<RootStackParamList, 'Game'> }) {
-  const { name, room } = route.params;
-  const [hand, setHand] = useState([]);
-  const [turnPlayer, setTurnPlayer] = useState(null);
-
-  useEffect(() => {
-    socket.on('start_game', ({ hand, turnPlayer }) => {
-      setHand(hand);
-      setTurnPlayer(turnPlayer);
-    });
-
-    socket.on('turn_update', ({ nextPlayer }) => {
-      setTurnPlayer(nextPlayer);
-    });
-  }, []);
-  useEffect(() => {
-    socket.on('start_game', (data) => {
-      setHand(data.hand); // tu mano de cartas
-    });
-
-    return () => {
-      socket.off('start_game');
-    };
-  }, []);
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tus cartas:</Text>
-      <ScrollView horizontal>
-      {hand.map((card, i) => (
-        <Card key={i}
-        value={card}
-        onPress={() => {
-          if (turnPlayer === name) {
-          socket.emit('play_card', { room, card });
-        }
-  }} />
-      ))}
-      </ScrollView>
-    </View>
-  );
-}
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   return (
@@ -127,9 +25,3 @@ export default function App() {
     </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20 },
-  input: { borderWidth: 1, marginBottom: 10, padding: 8 },
-  title: { fontWeight: 'bold', fontSize: 20, marginTop: 20 },
-});
