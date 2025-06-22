@@ -17,6 +17,11 @@ export const styles = StyleSheet.create({
     fontSize: 20,
     marginTop: 20,
   },
+  subtitle: {
+    fontWeight: 'bold',
+    fontSize: 10,
+    marginTop: 20,
+  },
   card: {
     width: 60,
     height: 90,
