@@ -39,5 +39,12 @@ export const styles = StyleSheet.create({
     fontSize: 18,
     color: '#fff',
     fontWeight: 'bold'
+  },
+  button:{
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20
   }
 });
